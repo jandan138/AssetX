@@ -2,11 +2,12 @@
 Physics parameter validation utilities
 """
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 import logging
 import math
 
-from .asset import Asset, PhysicsProperties
+# 现在使用USD风格的Asset类，不再需要单独的PhysicsProperties
+from .asset import Asset
 
 logger = logging.getLogger(__name__)
 
@@ -132,22 +133,26 @@ class PhysicsValidator:
     
     def _compare_link_physics(self, 
                             link_name: str,
-                            props1: PhysicsProperties,
-                            props2: PhysicsProperties,
+                            props1: Dict[str, Any],
+                            props2: Dict[str, Any],
                             result: ValidationResult) -> None:
         """比较两个链接的物理属性"""
         
         # 比较质量
-        if props1.mass is not None and props2.mass is not None:
-            mass_diff = abs(props1.mass - props2.mass)
+        mass1 = props1.get('physics:mass')
+        mass2 = props2.get('physics:mass')
+        if mass1 is not None and mass2 is not None:
+            mass_diff = abs(mass1 - mass2)
             if mass_diff > self.tolerance:
                 result.add_warning(
                     f"Mass difference for link '{link_name}': {mass_diff:.6f}"
                 )
         
         # 比较惯性矩阵
-        if props1.inertia is not None and props2.inertia is not None:
-            inertia_diff = [abs(i1 - i2) for i1, i2 in zip(props1.inertia, props2.inertia)]
+        inertia1 = props1.get('physics:inertia')
+        inertia2 = props2.get('physics:inertia')
+        if inertia1 is not None and inertia2 is not None:
+            inertia_diff = [abs(i1 - i2) for i1, i2 in zip(inertia1, inertia2)]
             max_diff = max(inertia_diff)
             if max_diff > self.tolerance:
                 result.add_warning(
@@ -155,8 +160,10 @@ class PhysicsValidator:
                 )
         
         # 比较质心位置
-        if props1.center_of_mass is not None and props2.center_of_mass is not None:
-            com_diff = [abs(c1 - c2) for c1, c2 in zip(props1.center_of_mass, props2.center_of_mass)]
+        com1 = props1.get('physics:centerOfMass')
+        com2 = props2.get('physics:centerOfMass')
+        if com1 is not None and com2 is not None:
+            com_diff = [abs(c1 - c2) for c1, c2 in zip(com1, com2)]
             max_com_diff = max(com_diff)
             if max_com_diff > self.tolerance:
                 result.add_warning(
