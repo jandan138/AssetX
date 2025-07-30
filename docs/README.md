@@ -16,6 +16,11 @@ Welcome to AssetX - the multi-format robot simulation asset bridge tool!
 - [Best Practices](best-practices.md) - Professional workflows and tips
 - [Troubleshooting](troubleshooting.md) - Common issues and solutions
 
+### Core Architecture
+- [USD Architecture Guide](usd_architecture_guide.md) - Deep dive into USD concepts and design patterns
+- [AssetX-USD Mapping](assetx_usd_mapping.md) - How AssetX corresponds to USD architecture
+- [Asset API Documentation](api/asset.md) - Updated modular Asset API reference
+
 ### Advanced Topics
 - [Format Support](formats/README.md) - Detailed format specifications
 - [Extension Development](development.md) - Contributing and extending AssetX

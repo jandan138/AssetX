@@ -8,6 +8,7 @@ __email__ = "contact@assetx.dev"
 
 from .core.asset import Asset
 from .core.converter import FormatConverter
+from .core.enums import AssetFormat, PropertyType, VariabilityType
 from .core.validator import PhysicsValidator
 from .mesh.processor import MeshProcessor
 from .meta.manager import MetaManager
@@ -15,7 +16,10 @@ from .viewer.preview import Previewer
 
 __all__ = [
     "Asset",
-    "FormatConverter", 
+    "AssetFormat",
+    "PropertyType",
+    "VariabilityType",
+    "FormatConverter",
     "PhysicsValidator",
     "MeshProcessor",
     "MetaManager",

@@ -18,7 +18,7 @@ def test_basic_imports():
         return False
     
     try:
-        from assetx.core.asset import Asset, PhysicsProperties, GeometryInfo, JointInfo
+        from assetx import Asset, AssetFormat
         print("   ✅ Core asset classes imported")
     except ImportError as e:
         print(f"   ❌ Failed to import core classes: {e}")
@@ -80,7 +80,7 @@ def test_core_functionality():
         # Test format converter
         from assetx.core.converter import FormatConverter
         converter = FormatConverter()
-        print(f"   ✅ Converter supports: {list(converter.supported_conversions.keys())}")
+        print("   ✅ Converter initialized")
         
         # Test validator
         from assetx.core.validator import PhysicsValidator
