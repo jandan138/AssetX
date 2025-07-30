@@ -1,0 +1,160 @@
+title: AssetX
+description: 多格式机器人仿真资产桥梁工具 - Multi-format Robot Simulation Asset Bridge Tool
+url: "https://jandan138.github.io/AssetX"
+baseurl: ""
+
+# Repository
+repository: jandan138/AssetX
+
+# 作者信息
+author:
+  name: AssetX Team
+  email: support@assetx.dev
+
+# Theme
+theme: minima
+# remote_theme: pages-themes/cayman@v0.2.0
+
+# Plugins
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+# Markdown
+markdown: kramdown
+highlighter: rouge
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    default_lang: python
+    css_class: 'highlight'
+    line_numbers: true
+
+# Collections
+collections:
+  docs:
+    output: true
+    permalink: /:collection/:name/
+
+# 导航菜单
+header_pages:
+  - docs/installation.md
+  - docs/quickstart.md
+  - docs/api/README.md
+  - docs/cli-reference.md
+  - docs/overview.md
+
+# 默认配置
+defaults:
+  - scope:
+      path: ""
+      type: "posts"
+    values:
+      layout: "post"
+  - scope:
+      path: ""
+      type: "docs"
+    values:
+      layout: "page"
+  - scope:
+      path: "docs"
+    values:
+      layout: "page"
+
+# 排除文件
+exclude:
+  - assetx/
+  - tests/
+  - examples/
+  - scripts/
+  - venv/
+  - __pycache__/
+  - "*.pyc"
+  - .git/
+  - .github/
+  - Gemfile
+  - Gemfile.lock
+  - node_modules/
+  - vendor/
+  - pyproject.toml
+  - setup.py
+  - requirements*.txt
+
+# 包含文件
+include:
+  - docs/
+  - README.md
+  - _config.yml
+
+# SEO 和社交媒体
+twitter:
+  username: assetx_robotics
+  card: summary
+
+social:
+  name: AssetX
+  links:
+    - https://github.com/jandan138/AssetX
+
+# 语言设置
+lang: zh-CN
+
+# 时区
+timezone: Asia/Shanghai
+
+# Navigation
+navigation:
+  - title: Home
+    url: /
+  - title: Documentation
+    url: /docs/
+  - title: API Reference
+    url: /docs/api/
+  - title: Examples
+    url: /examples/
+  - title: GitHub
+    url: https://github.com/jandan138/AssetX
+
+# Default layouts
+defaults:
+  - scope:
+      path: ""
+      type: "docs"
+    values:
+      layout: "default"
+  - scope:
+      path: "docs"
+    values:
+      layout: "default"
+
+# SEO
+author: AssetX Team
+twitter:
+  username: assetx_dev
+social:
+  name: AssetX
+  links:
+    - https://github.com/jandan138/AssetX
+
+# Build settings
+safe: true
+include:
+  - README.md
+  - docs/
+exclude:
+  - assetx/
+  - tests/
+  - examples/basic_usage.py
+  - "*.py"
+  - requirements.txt
+  - setup.py
+  - pyproject.toml
+  - .gitignore
+  - .github/
+  - Gemfile
+  - Gemfile.lock
+
+# GitHub Pages specific
+github: [metadata]
