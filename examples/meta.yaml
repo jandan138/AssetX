@@ -1,0 +1,51 @@
+# Example meta.yaml file for demonstration
+
+schema_version: "1.0"
+created_at: "2025-01-01T10:00:00"
+updated_at: "2025-01-01T15:30:00"
+
+global_settings:
+  default_unit: "m"
+  default_mass_unit: "kg"
+  coordinate_system: "right_handed"
+
+assets:
+  panda_arm.urdf:
+    name: "panda_arm.urdf"
+    description: "Franka Emika Panda 7-DOF robot arm"
+    original_format: "urdf"
+    semantic_category: "robot_arm"
+    tags: ["7dof", "franka", "manipulator", "research"]
+    created_at: "2025-01-01T10:00:00"
+    updated_at: "2025-01-01T15:30:00"
+    physics_validated: true
+    
+    conversions:
+      mjcf:
+        output_path: "./converted/panda_arm.xml"
+        conversion_time: 2.34
+        success: true
+        notes: "Successful URDF to MJCF conversion"
+        timestamp: "2025-01-01T14:20:00"
+    
+    validations:
+      physics:
+        result:
+          is_valid: true
+          error_count: 0
+          warning_count: 1
+          warnings: ["Very small mass for link 'panda_hand': 0.0001"]
+        compared_with: null
+        timestamp: "2025-01-01T14:45:00"
+    
+    custom_fields:
+      manufacturer: "Franka Emika"
+      payload_capacity: 3.0
+      workspace_radius: 0.855
+
+collections:
+  franka_family:
+    name: "Franka Robot Family"
+    description: "Complete set of Franka Emika robots and accessories"
+    assets: ["panda_arm.urdf"]
+    maintainer: "AssetX Team"

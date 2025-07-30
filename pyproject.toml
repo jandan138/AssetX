@@ -1,0 +1,83 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "assetx"
+version = "0.1.0"
+description = "Multi-format robot simulation asset bridge tool"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "AssetX Team", email = "contact@assetx.dev"},
+]
+keywords = ["robotics", "simulation", "urdf", "mjcf", "usd", "asset-conversion"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    "click>=8.0.0",
+    "pyyaml>=6.0",
+    "numpy>=1.20.0",
+]
+
+[project.optional-dependencies]
+mesh = ["trimesh>=3.15.0"]
+viewer = ["trimesh>=3.15.0"]
+viewer-open3d = ["open3d>=0.15.0"]
+urdf = ["urdfpy>=0.0.22"]
+mujoco = ["mujoco>=2.3.0"]
+usd = ["pxr"]
+basic = ["trimesh>=3.15.0"]
+all = [
+    "trimesh>=3.15.0",
+    "open3d>=0.15.0", 
+    "urdfpy>=0.0.22",
+    "mujoco>=2.3.0",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=22.0.0",
+    "isort>=5.10.0",
+    "flake8>=4.0.0",
+    "mypy>=0.950",
+]
+
+[project.scripts]
+assetx = "assetx.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/your-name/assetx"
+Repository = "https://github.com/your-name/assetx"
+Issues = "https://github.com/your-name/assetx/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["assetx*"]
+
+[tool.black]
+line-length = 88
+target-version = ['py38']
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
