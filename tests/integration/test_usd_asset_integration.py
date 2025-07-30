@@ -3,7 +3,7 @@
 测试USD风格的Asset类设计
 """
 
-from assetx.core.asset import Asset, SdfPath, AssetFormat
+from assetx.core import Asset, SdfPath, AssetFormat
 import tempfile
 import os
 

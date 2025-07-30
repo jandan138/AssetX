@@ -10,7 +10,9 @@ import os
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from assetx.core.asset import AssetPrim, AssetStage, SdfPath
+from assetx.core.prim import AssetPrim
+from assetx.core.stage import AssetStage
+from assetx.core.sdf_path import SdfPath
 
 
 class TestAssetPrim(unittest.TestCase):

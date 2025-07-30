@@ -3,7 +3,7 @@
 展示USD风格Asset的所有核心功能
 """
 
-from assetx.core.asset import Asset, SdfPath
+from assetx.core import Asset, SdfPath
 from pathlib import Path
 import tempfile
 
