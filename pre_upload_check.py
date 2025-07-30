@@ -99,23 +99,32 @@ def check_dependencies():
     """检查依赖情况"""
     print("\n📦 Checking dependencies...")
     
-    core_deps = ['click', 'pyyaml', 'numpy']
-    optional_deps = ['trimesh', 'open3d', 'urdfpy', 'mujoco']
+    core_deps = [
+        ('click', 'click'),
+        ('yaml', 'pyyaml'), 
+        ('numpy', 'numpy')
+    ]
+    optional_deps = [
+        ('trimesh', 'trimesh'),
+        ('open3d', 'open3d'),
+        ('urdfpy', 'urdfpy'),
+        ('mujoco', 'mujoco')
+    ]
     
-    for dep in core_deps:
+    for import_name, package_name in core_deps:
         try:
-            __import__(dep)
-            print(f"   ✅ {dep} (core)")
+            __import__(import_name)
+            print(f"   ✅ {package_name} (core)")
         except ImportError:
-            print(f"   ❌ {dep} (core) - REQUIRED")
+            print(f"   ❌ {package_name} (core) - REQUIRED")
             return False
     
-    for dep in optional_deps:
+    for import_name, package_name in optional_deps:
         try:
-            __import__(dep)
-            print(f"   ✅ {dep} (optional)")
+            __import__(import_name)
+            print(f"   ✅ {package_name} (optional)")
         except ImportError:
-            print(f"   ⚠️ {dep} (optional) - not installed")
+            print(f"   ⚠️ {package_name} (optional) - not installed")
     
     return True
 
