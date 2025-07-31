@@ -44,7 +44,10 @@ class FormatConverter:
 
         source_format = asset.format
 
-        if not self.can_convert(source_format, target_format):
+        # 将枚举转换为字符串进行比较
+        source_format_str = source_format.value.lower() if hasattr(source_format, 'value') else str(source_format).split('.')[-1].lower()
+
+        if not self.can_convert(source_format_str, target_format):
             raise ValueError(
                 f"Conversion from {source_format} to {target_format} not supported"
             )
@@ -56,13 +59,15 @@ class FormatConverter:
             output_path = Path(output_path)
 
         # 执行转换
-        if source_format == "urdf" and target_format == "mjcf":
+        if source_format_str == "urdf" and target_format == "mjcf":
             self._urdf_to_mjcf(asset, output_path)
-        elif source_format == "mjcf" and target_format == "urdf":
+        elif source_format_str == "mjcf" and target_format == "urdf":
             self._mjcf_to_urdf(asset, output_path)
-        elif source_format == "urdf" and target_format == "usd":
+        elif source_format_str == "urdf" and target_format == "usd":
             self._urdf_to_usd(asset, output_path)
-        elif source_format == "usd" and target_format == "genesis":
+        elif source_format_str == "usd" and target_format == "urdf":
+            self._usd_to_urdf(asset, output_path)
+        elif source_format_str == "usd" and target_format == "genesis":
             self._usd_to_genesis(asset, output_path)
         else:
             raise NotImplementedError(
@@ -135,6 +140,28 @@ class FormatConverter:
         """URDF转USD"""
         # TODO: 实现URDF到USD的转换
         raise NotImplementedError("URDF to USD conversion not implemented yet")
+
+    def _usd_to_urdf(self, asset: Asset, output_path: Path) -> None:
+        """USD转URDF"""
+        from .usd_to_urdf_converter import UsdToUrdfConverter
+        
+        print(f"🔄 USD → URDF 转换: {asset.asset_path} → {output_path}")
+        
+        converter = UsdToUrdfConverter()
+        
+        # 确定机器人名称
+        robot_name = output_path.stem  # 使用文件名作为机器人名称
+        
+        success = converter.convert(
+            str(asset.asset_path), 
+            str(output_path), 
+            robot_name
+        )
+        
+        if not success:
+            raise RuntimeError(f"USD to URDF conversion failed for {asset.asset_path}")
+        
+        print(f"✅ USD → URDF 转换完成: {output_path}")
 
     def _usd_to_genesis(self, asset: Asset, output_path: Path) -> None:
         """USD转Genesis JSON"""
