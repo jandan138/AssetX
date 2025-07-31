@@ -1,0 +1,36 @@
+# AssetX USD支持环境配置
+name: assetx-usd
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  # Python环境
+  - python=3.10
+  
+  # USD库 (核心依赖)
+  - pxr>=22.11
+  
+  # AssetX基础依赖
+  - numpy>=1.20.0
+  - click>=8.0.0
+  - pyyaml>=6.0
+  
+  # 可选依赖
+  - trimesh>=3.15.0  # 3D网格处理
+  
+  # 开发工具
+  - pytest>=7.0.0
+  - black>=22.0.0
+  - isort>=5.10.0
+  - flake8>=4.0.0
+  
+  # Jupyter (可选)
+  - jupyter
+  - notebook
+  
+  # 通过pip安装的包
+  - pip
+  - pip:
+    - urdfpy>=0.0.22  # URDF支持
+    # - mujoco>=2.3.0   # 如需要MuJoCo支持
+    # - open3d>=0.15.0  # 如需要Open3D可视化
