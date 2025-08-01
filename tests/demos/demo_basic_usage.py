@@ -78,7 +78,7 @@ def main():
     
     # 6. 遍历所有Prim
     print("\n6. 遍历所有Prim...")
-    root_prims = asset.get_root_prims()
+    root_prims = asset.query.get_root_prims()
     print(f"   ✓ 根Prim数量: {len(root_prims)}")
     
     def print_prim_tree(prim, indent=0):
@@ -93,8 +93,8 @@ def main():
     
     # 7. 查询特定类型的Prim
     print("\n7. 查询特定类型...")
-    links = asset.find_prims_by_type("Link")
-    joints = asset.find_prims_by_type("Joint")
+    links = asset.query.find_prims_by_type("Link")
+    joints = asset.query.find_prims_by_type("Joint")
     print(f"   ✓ Link数量: {len(links)}")
     print(f"   ✓ Joint数量: {len(joints)}")
     

@@ -2,65 +2,68 @@
 Test suite for AssetX
 """
 
-import pytest
+import unittest
 import tempfile
 from pathlib import Path
-import yaml
+import sys
+import os
 
-from assetx.core.asset import Asset, PhysicsProperties
+# 添加项目根目录到路径
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
+from assetx.core.asset import Asset
 from assetx.core.converter import FormatConverter
 from assetx.core.validator import PhysicsValidator
 from assetx.mesh.processor import MeshProcessor
 from assetx.meta.manager import MetaManager
 
 
-class TestAsset:
+class TestAsset(unittest.TestCase):
     """Test Asset class"""
     
     def test_format_detection(self):
         """Test format detection from file extension"""
         with tempfile.NamedTemporaryFile(suffix='.urdf') as f:
             asset = Asset(f.name)
-            assert asset.format == 'urdf'
+            self.assertEqual(asset.format.value, 'urdf')
         
         with tempfile.NamedTemporaryFile(suffix='.xml') as f:
             asset = Asset(f.name)
-            assert asset.format == 'mjcf'
+            self.assertEqual(asset.format.value, 'mjcf')
     
-    def test_physics_properties(self):
-        """Test PhysicsProperties dataclass"""
-        props = PhysicsProperties(
-            mass=1.5,
-            inertia=[0.1, 0.2, 0.3, 0.0, 0.0, 0.0],
-            center_of_mass=[0.0, 0.0, 0.1]
-        )
-        assert props.mass == 1.5
-        assert len(props.inertia) == 6
-        assert len(props.center_of_mass) == 3
+    def test_asset_creation(self):
+        """Test basic asset creation"""
+        with tempfile.NamedTemporaryFile(suffix='.urdf') as f:
+            asset = Asset(f.name)
+            self.assertIsNotNone(asset)
+            self.assertFalse(asset.is_loaded)
+            self.assertIsNotNone(asset.query)
+            self.assertIsNotNone(asset.schema)
+            self.assertIsNotNone(asset.meta)
 
 
-class TestFormatConverter:
+class TestFormatConverter(unittest.TestCase):
     """Test FormatConverter class"""
     
     def test_supported_conversions(self):
         """Test supported conversion mappings"""
         converter = FormatConverter()
         
-        assert converter.can_convert('urdf', 'mjcf')
-        assert converter.can_convert('urdf', 'usd') 
-        assert not converter.can_convert('genesis', 'urdf')
+        self.assertTrue(converter.can_convert('urdf', 'mjcf'))
+        self.assertTrue(converter.can_convert('urdf', 'usd')) 
+        self.assertFalse(converter.can_convert('genesis', 'urdf'))
     
     def test_extension_mapping(self):
         """Test file extension mapping"""
         converter = FormatConverter()
         
-        assert converter._get_extension('urdf') == '.urdf'
-        assert converter._get_extension('mjcf') == '.xml'
-        assert converter._get_extension('usd') == '.usd'
-        assert converter._get_extension('genesis') == '.json'
+        self.assertEqual(converter._get_extension('urdf'), '.urdf')
+        self.assertEqual(converter._get_extension('mjcf'), '.xml')
+        self.assertEqual(converter._get_extension('usd'), '.usd')
+        self.assertEqual(converter._get_extension('genesis'), '.json')
 
 
-class TestPhysicsValidator:
+class TestPhysicsValidator(unittest.TestCase):
     """Test PhysicsValidator class"""
     
     def test_triangle_inequality(self):
@@ -68,29 +71,29 @@ class TestPhysicsValidator:
         validator = PhysicsValidator()
         
         # Valid inertia values
-        assert validator._check_inertia_triangle_inequality(1.0, 1.0, 1.0)
-        assert validator._check_inertia_triangle_inequality(1.0, 2.0, 2.5)
+        self.assertTrue(validator._check_inertia_triangle_inequality(1.0, 1.0, 1.0))
+        self.assertTrue(validator._check_inertia_triangle_inequality(1.0, 2.0, 2.5))
         
         # Invalid inertia values
-        assert not validator._check_inertia_triangle_inequality(1.0, 1.0, 3.0)
+        self.assertFalse(validator._check_inertia_triangle_inequality(1.0, 1.0, 3.0))
     
     def test_validation_result(self):
         """Test ValidationResult class"""
         from assetx.core.validator import ValidationResult
         
         result = ValidationResult()
-        assert result.is_valid
+        self.assertTrue(result.is_valid)
         
         result.add_warning("Test warning")
-        assert len(result.warnings) == 1
-        assert result.is_valid  # Warnings don't affect validity
+        self.assertEqual(len(result.warnings), 1)
+        self.assertTrue(result.is_valid)  # Warnings don't affect validity
         
         result.add_error("Test error")
-        assert len(result.errors) == 1
-        assert not result.is_valid  # Errors make it invalid
+        self.assertEqual(len(result.errors), 1)
+        self.assertFalse(result.is_valid)  # Errors make it invalid
 
 
-class TestMeshProcessor:
+class TestMeshProcessor(unittest.TestCase):
     """Test MeshProcessor class"""
     
     def test_supported_formats(self):
@@ -99,7 +102,7 @@ class TestMeshProcessor:
         
         expected_formats = ['.obj', '.stl', '.ply', '.dae', '.glb', '.gltf']
         for fmt in expected_formats:
-            assert fmt in processor.supported_formats
+            self.assertIn(fmt, processor.supported_formats)
     
     def test_unit_normalization(self):
         """Test unit conversion calculations"""
@@ -144,8 +147,8 @@ class TestMetaManager:
             assert asset_meta['name'] == "test_robot.urdf"
             assert asset_meta['original_format'] == "urdf"
             assert asset_meta['semantic_category'] == "robot_arm"
-            assert "test" in asset_meta['tags']
-            assert "demo" in asset_meta['tags']
+            self.assertIn("test", asset_meta['tags'])
+            self.assertIn("demo", asset_meta['tags'])
     
     def test_meta_file_operations(self):
         """Test meta file save and load"""
@@ -159,12 +162,12 @@ class TestMetaManager:
             
             # Load and verify
             loaded_meta = meta_manager.load_meta()
-            assert loaded_meta['test_field'] == 'test_value'
-            assert loaded_meta['schema_version'] == "1.0"
+            self.assertEqual(loaded_meta['test_field'], 'test_value')
+            self.assertEqual(loaded_meta['schema_version'], "1.0")
 
 
 # Integration tests
-class TestIntegration:
+class TestIntegration(unittest.TestCase):
     """Integration tests for AssetX components"""
     
     def test_meta_and_converter_integration(self):
@@ -187,4 +190,4 @@ class TestIntegration:
 
 
 if __name__ == "__main__":
-    pytest.main([__file__])
+    unittest.main()

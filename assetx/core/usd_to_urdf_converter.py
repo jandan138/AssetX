@@ -104,6 +104,72 @@ class UsdToUrdfConverter:
         print(f"   发现 {len(structure['links'])} 个链接")
         print(f"   发现 {len(structure['joints'])} 个关节")
         
+        # 验证和修复结构完整性
+        structure = self._validate_and_fix_structure(structure)
+        
+        return structure
+    
+    def _validate_and_fix_structure(self, structure: Dict) -> Dict:
+        """验证和修复结构完整性"""
+        print(f"🔧 验证和修复结构完整性...")
+        
+        # 收集所有被关节引用的链接名称
+        referenced_links = set()
+        for joint in structure['joints']:
+            if joint['parent']:
+                referenced_links.add(joint['parent'])
+            if joint['child']:
+                referenced_links.add(joint['child'])
+        
+        # 收集现有的链接名称
+        existing_links = {link['name'] for link in structure['links']}
+        
+        # 找到缺失的链接
+        missing_links = referenced_links - existing_links
+        
+        if missing_links:
+            print(f"   发现 {len(missing_links)} 个缺失的链接: {list(missing_links)}")
+            
+            # 为缺失的链接创建基础定义
+            for link_name in missing_links:
+                if link_name and link_name != 'world':  # 不为 world 创建链接
+                    missing_link = {
+                        'name': link_name,
+                        'path': f"/{structure['robot_name']}/{link_name}",
+                        'mass': 0.1,  # 小质量
+                        'inertia': [0.001, 0.0, 0.0, 0.001, 0.0, 0.001],  # 小惯性
+                        'origin_xyz': [0.0, 0.0, 0.0],
+                        'origin_rpy': [0.0, 0.0, 0.0],
+                        'visual_meshes': [],
+                        'collision_meshes': []
+                    }
+                    structure['links'].append(missing_link)
+                    print(f"   ✅ 添加缺失链接: {link_name}")
+        
+        # 修复 rootJoint 问题
+        for joint in structure['joints']:
+            if 'root' in joint['name'].lower():
+                joint['type'] = 'fixed'
+                if not joint['parent'] or joint['parent'] == structure['robot_name']:
+                    joint['parent'] = 'world'
+                if not joint['child']:
+                    # 将第一个链接作为子链接
+                    if structure['links']:
+                        joint['child'] = structure['links'][0]['name']
+                print(f"   🔧 修复根关节: {joint['name']}")
+        
+        # 移除无效的关节（没有有效父子关系的）
+        valid_joints = []
+        for joint in structure['joints']:
+            if joint['parent'] and joint['child'] and joint['parent'] != joint['child']:
+                valid_joints.append(joint)
+            else:
+                print(f"   ❌ 移除无效关节: {joint['name']} (parent: {joint['parent']}, child: {joint['child']})")
+        
+        structure['joints'] = valid_joints
+        
+        print(f"   ✅ 最终结构: {len(structure['links'])} 个链接, {len(structure['joints'])} 个关节")
+        
         return structure
     
     def _extract_link_info(self, prim: AssetPrim, stage: AssetStage) -> Optional[Dict]:
@@ -181,38 +247,135 @@ class UsdToUrdfConverter:
         if hasattr(prim, '_properties'):
             props = prim._properties
             
-            # 关节位置
+            # 关节位置 - 使用 physics:localPos0
             if 'physics:localPos0' in props:
                 pos = props['physics:localPos0']
                 if hasattr(pos, 'get_value'):
-                    joint_info['origin_xyz'] = list(pos.get_value())
+                    pos_value = pos.get_value()
+                    if pos_value and len(pos_value) >= 3:
+                        joint_info['origin_xyz'] = [float(pos_value[0]), float(pos_value[1]), float(pos_value[2])]
             
-            # 关节限制
+            # 关节旋转 - 使用 physics:localRot0 (四元数转欧拉角)
+            if 'physics:localRot0' in props:
+                rot = props['physics:localRot0']
+                if hasattr(rot, 'get_value'):
+                    rot_value = rot.get_value()
+                    if rot_value and len(rot_value) >= 4:
+                        # 四元数转欧拉角 (简化版本)
+                        # 这里需要更完整的四元数到欧拉角转换
+                        joint_info['origin_rpy'] = self._quaternion_to_euler(rot_value)
+            
+            # 关节轴向 - 使用 physics:axis
+            if 'physics:axis' in props:
+                axis = props['physics:axis']
+                if hasattr(axis, 'get_value'):
+                    axis_value = axis.get_value()
+                    if axis_value:
+                        # USD axis 可能是 "X", "Y", "Z" 字符串
+                        if isinstance(axis_value, str):
+                            if axis_value.upper() == "X":
+                                joint_info['axis_xyz'] = [1.0, 0.0, 0.0]
+                            elif axis_value.upper() == "Y":
+                                joint_info['axis_xyz'] = [0.0, 1.0, 0.0]
+                            elif axis_value.upper() == "Z":
+                                joint_info['axis_xyz'] = [0.0, 0.0, 1.0]
+                        elif len(axis_value) >= 3:
+                            joint_info['axis_xyz'] = [float(axis_value[0]), float(axis_value[1]), float(axis_value[2])]
+            
+            # 关节限制 - 提取真实限制
             if 'physics:lowerLimit' in props:
                 limit = props['physics:lowerLimit']
                 if hasattr(limit, 'get_value'):
-                    joint_info['limits']['lower'] = float(limit.get_value())
+                    limit_value = limit.get_value()
+                    if limit_value is not None:
+                        # USD 中的角度可能是度数，需要转换为弧度
+                        joint_info['limits']['lower'] = math.radians(float(limit_value))
                     
             if 'physics:upperLimit' in props:
                 limit = props['physics:upperLimit']
                 if hasattr(limit, 'get_value'):
-                    joint_info['limits']['upper'] = float(limit.get_value())
+                    limit_value = limit.get_value()
+                    if limit_value is not None:
+                        joint_info['limits']['upper'] = math.radians(float(limit_value))
             
-            # 动力学参数
+            # 动力学参数 - 提取真实参数
             if 'drive:angular:physics:damping' in props:
                 damping = props['drive:angular:physics:damping']
                 if hasattr(damping, 'get_value'):
-                    joint_info['dynamics']['damping'] = float(damping.get_value())
+                    damping_value = damping.get_value()
+                    if damping_value is not None:
+                        joint_info['dynamics']['damping'] = float(damping_value)
                     
             if 'drive:angular:physics:maxForce' in props:
                 force = props['drive:angular:physics:maxForce']
                 if hasattr(force, 'get_value'):
-                    joint_info['limits']['effort'] = float(force.get_value())
+                    force_value = force.get_value()
+                    if force_value is not None:
+                        joint_info['limits']['effort'] = float(force_value)
+            
+            # 提取父子关系 - 使用 physics:body0/body1
+            if 'physics:body0' in props:
+                body0 = props['physics:body0']
+                if hasattr(body0, 'get_value'):
+                    body0_value = body0.get_value()
+                    if body0_value:
+                        # 从路径中提取链接名称
+                        parent_path = str(body0_value)
+                        joint_info['parent'] = self._extract_link_name_from_path(parent_path)
+            
+            if 'physics:body1' in props:
+                body1 = props['physics:body1']
+                if hasattr(body1, 'get_value'):
+                    body1_value = body1.get_value()
+                    if body1_value:
+                        child_path = str(body1_value)
+                        joint_info['child'] = self._extract_link_name_from_path(child_path)
         
-        # 推断父子关节关系 (基于路径)
+        # 如果没有通过属性找到父子关系，使用路径推断（备用方案）
+        if not joint_info['parent'] or not joint_info['child']:
+            self._infer_joint_relationships(prim, joint_info)
+        
+        return joint_info
+    
+    def _quaternion_to_euler(self, quat) -> List[float]:
+        """四元数转欧拉角 (简化版本)"""
+        try:
+            if len(quat) >= 4:
+                # quat = [w, x, y, z] 或 [x, y, z, w]
+                # 这里假设是 [w, x, y, z] 格式
+                w, x, y, z = float(quat[0]), float(quat[1]), float(quat[2]), float(quat[3])
+                
+                # 计算欧拉角 (roll, pitch, yaw)
+                roll = math.atan2(2 * (w * x + y * z), 1 - 2 * (x * x + y * y))
+                pitch = math.asin(2 * (w * y - z * x))
+                yaw = math.atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z))
+                
+                return [roll, pitch, yaw]
+        except:
+            pass
+        
+        return [0.0, 0.0, 0.0]
+    
+    def _extract_link_name_from_path(self, path: str) -> str:
+        """从 USD 路径中提取链接名称"""
+        if not path:
+            return ""
+        
+        # 移除路径前缀，获取最后的名称
+        path_parts = path.strip('<>').split('/')
+        if path_parts:
+            link_name = path_parts[-1]
+            # 清理名称中的特殊字符
+            return link_name.replace('>', '').replace('<', '').strip()
+        
+        return ""
+    
+    def _infer_joint_relationships(self, prim: AssetPrim, joint_info: Dict) -> None:
+        """推断关节的父子关系（备用方案）"""
         path_parts = str(prim.path).split('/')
+        
         if len(path_parts) >= 3:
-            # 关节通常在某个链接下，其父链接是当前链接，子链接通过关节名推断
+            # 关节通常在某个链接下
             parent_link = path_parts[-2]  # 父链接
             joint_info['parent'] = parent_link
             
@@ -222,16 +385,49 @@ class UsdToUrdfConverter:
                 # 例如 panda_joint1 -> panda_link1
                 child_name = joint_name.replace("joint", "link")
                 joint_info['child'] = child_name
-        
-        return joint_info
+            
+            # 特殊处理 rootJoint
+            if "root" in joint_name.lower():
+                joint_info['type'] = 'fixed'
+                joint_info['parent'] = 'world'  # 或者使用第一个链接作为子链接
+                if len(path_parts) >= 2:
+                    joint_info['child'] = path_parts[1]  # 机器人根节点
     
     def _extract_mesh_info(self, prim: AssetPrim) -> Optional[Dict]:
         """提取网格信息"""
-        return {
+        mesh_info = {
             'filename': f"package://{self.package_name}/meshes/{prim.name}.dae",
             'origin_xyz': [0.0, 0.0, 0.0],
             'origin_rpy': [0.0, 0.0, 0.0]
         }
+        
+        # 尝试从 USD references 中获取真实的网格文件路径
+        if hasattr(prim, '_properties'):
+            props = prim._properties
+            
+            # 查找几何体相关属性
+            for prop_name, prop in props.items():
+                if 'filename' in prop_name.lower() or 'file' in prop_name.lower() or 'path' in prop_name.lower():
+                    if hasattr(prop, 'get_value'):
+                        file_path = prop.get_value()
+                        if file_path and isinstance(file_path, str):
+                            # 处理 USD 几何文件路径
+                            if file_path.endswith(('.dae', '.obj', '.fbx', '.stl')):
+                                # 转换为 ROS package 格式
+                                filename = file_path.split('/')[-1]  # 获取文件名
+                                mesh_info['filename'] = f"package://{self.package_name}/meshes/{filename}"
+                                break
+        
+        # 如果是 references 引用，尝试从路径中获取更具体的名称
+        parent_path = str(prim.path)
+        if "visuals" in parent_path:
+            link_name = parent_path.split('/')[-2]  # 获取父链接名称
+            mesh_info['filename'] = f"package://{self.package_name}/meshes/{link_name}_visual.dae"
+        elif "collisions" in parent_path:
+            link_name = parent_path.split('/')[-2]  # 获取父链接名称
+            mesh_info['filename'] = f"package://{self.package_name}/meshes/{link_name}_collision.dae"
+        
+        return mesh_info
     
     def _create_urdf(self, structure: Dict) -> ET.Element:
         """创建 URDF XML 结构"""

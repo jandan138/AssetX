@@ -3,9 +3,16 @@
 测试USD风格的Asset类设计
 """
 
-from assetx.core import Asset, SdfPath, AssetFormat
-import tempfile
+import sys
 import os
+
+# 添加项目根目录到路径
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+
+from assetx.core.asset import Asset
+from assetx.core.sdf_path import SdfPath
+from assetx.core.enums import AssetFormat
+import tempfile
 
 def test_usd_asset():
     print('=== USD风格Asset类测试 ===')
@@ -47,10 +54,10 @@ def test_usd_asset():
         print(f'   格式检测: {asset.format}')
         
         # 加载资产
-        success = asset.load()
-        print(f'2. 加载结果: {success}')
+        asset.load()
+        print(f'2. 加载结果: 已加载')
         
-        if success:
+        if asset.is_loaded:
             # 测试Stage接口
             stage = asset.get_stage()
             print(f'3. Stage获取成功: {stage.identifier}')
@@ -62,24 +69,24 @@ def test_usd_asset():
                 print(f'   应用的schemas: {default_prim.get_applied_schemas()}')
             
             # 测试遍历
-            all_prims = asset.get_all_prims()
+            all_prims = asset.query.get_all_prims()
             print(f'5. 所有prim数量: {len(all_prims)}')
             for prim in all_prims:
                 print(f'   - {prim.path} (类型: {prim.type_name})')
             
             # 测试链接和关节
-            links = asset.get_all_links()
-            joints = asset.get_all_joints()
+            links = asset.query.get_links()
+            joints = asset.query.get_joints()
             print(f'6. 链接数量: {len(links)}, 关节数量: {len(joints)}')
             
             # 测试具体信息获取
             if links:
-                link_info = asset.get_link_info(links[0].name)
-                print(f'7. 第一个链接信息: {link_info}')
+                link = links[0]
+                print(f'7. 第一个链接: {link.name} 路径: {link.path}')
             
             if joints:
-                joint_info = asset.get_joint_info(joints[0].name)
-                print(f'8. 第一个关节信息: {joint_info}')
+                joint = joints[0]
+                print(f'8. 第一个关节: {joint.name} 路径: {joint.path}')
             
             # 测试USD风格的路径操作
             test_path = SdfPath('/test_robot/base_link')

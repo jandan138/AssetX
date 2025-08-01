@@ -3,9 +3,16 @@
 展示USD风格Asset的所有核心功能
 """
 
-from assetx.core import Asset, SdfPath
+import sys
+import os
 from pathlib import Path
 import tempfile
+
+# 添加项目根目录到路径
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+
+from assetx.core.asset import Asset
+from assetx.core.sdf_path import SdfPath
 
 def demo_usd_features():
     print("=== USD风格Asset系统完整功能演示 ===")
@@ -78,7 +85,7 @@ def demo_usd_features():
         
         # 3. 层次结构遍历
         print("\n3. 层次结构遍历:")
-        root_prims = asset.get_root_prims()
+        root_prims = asset.query.get_root_prims()
         print(f"   ✓ 根Prim数量: {len(root_prims)}")
         
         def print_hierarchy(prim, indent=0):
@@ -128,9 +135,9 @@ def demo_usd_features():
         
         # 6. 类型查询
         print("\n6. 类型查询:")
-        links = asset.find_prims_by_type("Link")
-        joints = asset.find_prims_by_type("Joint")
-        robots = asset.find_prims_by_type("Robot")
+        links = asset.query.find_prims_by_type("Link")
+        joints = asset.query.find_prims_by_type("Joint")
+        robots = asset.query.find_prims_by_type("Robot")
         
         print(f"   ✓ Robot数量: {len(robots)}")
         print(f"   ✓ Link数量: {len(links)}")
@@ -163,8 +170,8 @@ def demo_usd_features():
         
         # 9. 遍历操作
         print("\n9. 遍历操作:")
-        all_prims = asset.traverse()
-        physics_prims = asset.traverse(lambda p: p.has_api_schema("PhysicsAPI"))
+        all_prims = asset.query.traverse()
+        physics_prims = asset.query.traverse(lambda p: p.has_api_schema("PhysicsAPI"))
         
         print(f"   ✓ 总Prim数量: {len(all_prims)}")
         print(f"   ✓ 具有PhysicsAPI的Prim: {len(physics_prims)}")
