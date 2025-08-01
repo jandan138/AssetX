@@ -125,20 +125,12 @@ class RobotVisualizer:
                 'joints': []
             }
         
-        # 调试：打印关节信息
-        logger.info("=== 调试关节信息 ===")
-        for joint in joints:
-            logger.info(f"关节: {joint.name}")
-            self._debug_joint_attributes(joint)
-        
         # 解析关节连接关系
         for joint in joints:
             try:
                 # 尝试获取关节的父子链接
                 parent_link = self._get_joint_parent_link(joint)
                 child_link = self._get_joint_child_link(joint)
-                
-                logger.info(f"关节 {joint.name}: 父链接={parent_link}, 子链接={child_link}")
                 
                 if parent_link and child_link:
                     # 建立父子关系
@@ -152,269 +144,53 @@ class RobotVisualizer:
                             'child_link': child_link,
                             'joint': joint
                         }
-                        logger.info(f"✓ 成功建立连接: {parent_link} -> {child_link}")
                         
             except Exception as e:
                 logger.warning(f"Failed to parse joint {joint.name}: {e}")
                 continue
     
-    def _debug_joint_attributes(self, joint: "AssetPrim"):
-        """调试关节属性"""
-        try:
-            logger.info(f"  关节类型: {getattr(joint, 'type_name', 'Unknown')}")
-            
-            # 列出所有属性
-            if hasattr(joint, 'get_property_names'):
-                properties = joint.get_property_names()
-                logger.info(f"  属性列表: {properties}")
-                
-            # 尝试常见的关节属性
-            common_attrs = [
-                'parent', 'child', 'parent_link', 'child_link',
-                'physics:body0', 'physics:body1', 'body0', 'body1',
-                'parentLink', 'childLink', 'rel:parent', 'rel:child'
-            ]
-            
-            for attr_name in common_attrs:
-                if hasattr(joint, 'get_attribute'):
-                    attr = joint.get_attribute(attr_name)
-                    if attr:
-                        value = attr.get() if hasattr(attr, 'get') else attr
-                        logger.info(f"  {attr_name}: {value}")
-                        
-        except Exception as e:
-            logger.debug(f"  调试属性失败: {e}")
-    
     def _get_joint_parent_link(self, joint: "AssetPrim") -> Optional[str]:
         """获取关节的父链接"""
         try:
-            # 扩展的属性名列表，优先检查URDF转换后常见的属性
-            attr_names = [
-                'physics:body0', 'parent_link', 'parentLink', 'body0',
-                'parent', 'rel:parent', 'target0', 'link0',
-                # URDF转换可能使用的属性
-                'urdf:parent_link', 'urdf:parent', 'parentBody'
-            ]
-            
-            for attr_name in attr_names:
+            # 尝试多种可能的属性名
+            for attr_name in ['physics:body0', 'parent_link', 'parentLink', 'body0']:
                 if hasattr(joint, 'get_attribute'):
                     attr = joint.get_attribute(attr_name)
-                    if attr:
-                        try:
-                            value = attr.get()
-                            if value:
-                                # 提取链接名（去掉路径前缀）
-                                link_name = str(value).split('/')[-1]
-                                if link_name:
-                                    logger.debug(f"从 {attr_name} 获取父链接: {link_name}")
-                                    return link_name
-                        except Exception as e:
-                            logger.debug(f"解析属性 {attr_name} 失败: {e}")
-                            continue
+                    if attr and attr.get():
+                        return str(attr.get()).split('/')[-1]  # 提取链接名
             
-            # 尝试从关节名称推断（如果遵循命名约定）
-            joint_name = joint.name.lower()
-            
-            # 常见的关节命名模式
-            if '_to_' in joint_name:
-                parts = joint_name.split('_to_')
-                if len(parts) >= 2:
-                    parent_link = parts[0]
-                    # 处理常见的链接名称映射
-                    if parent_link == 'base':
-                        parent_link = 'base_link'
-                    elif parent_link == 'arm2_to':
-                        parent_link = 'arm2'
-                    logger.debug(f"从关节名推断父链接: {parent_link}")
-                    return parent_link
-            elif 'base_to_' in joint_name:
-                return 'base_link'
-            elif joint_name.endswith('_joint'):
-                # 如果是 "base_to_arm1_joint" 这种格式
-                base_name = joint_name.replace('_joint', '')
-                if '_to_' in base_name:
-                    parent_link = base_name.split('_to_')[0]
-                    # 处理常见的链接名称映射
-                    if parent_link == 'base':
-                        parent_link = 'base_link'
-                    logger.debug(f"从关节名推断父链接: {parent_link}")
-                    return parent_link
+            # 如果没有找到，尝试从USD层次结构推断
+            if hasattr(joint, 'get_parent'):
+                parent = joint.get_parent()
+                if parent:
+                    return parent.name
                     
-        except Exception as e:
-            logger.debug(f"获取父链接失败: {e}")
+        except Exception:
+            pass
         return None
     
     def _get_joint_child_link(self, joint: "AssetPrim") -> Optional[str]:
         """获取关节的子链接"""
         try:
-            # 扩展的属性名列表，优先检查URDF转换后常见的属性
-            attr_names = [
-                'physics:body1', 'child_link', 'childLink', 'body1',
-                'child', 'rel:child', 'target1', 'link1',
-                # URDF转换可能使用的属性
-                'urdf:child_link', 'urdf:child', 'childBody'
-            ]
-            
-            for attr_name in attr_names:
-                if hasattr(joint, 'get_attribute'):
-                    attr = joint.get_attribute(attr_name)
-                    if attr:
-                        try:
-                            value = attr.get()
-                            if value:
-                                # 提取链接名（去掉路径前缀）
-                                link_name = str(value).split('/')[-1]
-                                if link_name:
-                                    logger.debug(f"从 {attr_name} 获取子链接: {link_name}")
-                                    return link_name
-                        except Exception as e:
-                            logger.debug(f"解析属性 {attr_name} 失败: {e}")
-                            continue
-            
-            # 尝试从关节名称推断（如果遵循命名约定）
-            joint_name = joint.name.lower()
-            
-            # 常见的关节命名模式
-            if '_to_' in joint_name:
-                parts = joint_name.split('_to_')
-                if len(parts) >= 2:
-                    child_link = parts[1]
-                    # 处理常见的链接名称映射
-                    if child_link == 'end':
-                        child_link = 'end_effector'
-                    elif 'effector' in child_link:
-                        child_link = 'end_effector'
-                    logger.debug(f"从关节名推断子链接: {child_link}")
-                    return child_link
-            elif joint_name.endswith('_joint'):
-                # 如果是 "base_to_arm1_joint" 这种格式
-                base_name = joint_name.replace('_joint', '')
-                if '_to_' in base_name:
-                    child_link = base_name.split('_to_')[1]
-                    # 处理常见的链接名称映射
-                    if child_link == 'end':
-                        child_link = 'end_effector'
-                    elif 'effector' in child_link:
-                        child_link = 'end_effector'
-                    logger.debug(f"从关节名推断子链接: {child_link}")
-                    return child_link
-                    
-        except Exception as e:
-            logger.debug(f"获取子链接失败: {e}")
-        return None
-    
-    def _find_base_link(self, links: List["AssetPrim"], joints: List["AssetPrim"]) -> Optional["AssetPrim"]:
-        """找到机器人的基座链接（根链接）"""
-        # 方法1：通过名称识别
-        for link in links:
-            name_lower = link.name.lower()
-            if any(keyword in name_lower for keyword in ['base', 'root', 'world']):
-                logger.info(f"Found base link by name: {link.name}")
-                return link
-        
-        # 方法2：找到没有被任何关节作为子链接的链接
-        child_links = set()
-        for joint in joints:
-            child_link = self._get_joint_child_link(joint)
-            if child_link:
-                child_links.add(child_link)
-        
-        for link in links:
-            if link.name not in child_links:
-                logger.info(f"Found base link by exclusion: {link.name}")
-                return link
-        
-        # 方法3：如果都不行，使用第一个链接
-        if links:
-            logger.warning(f"Using first link as base: {links[0].name}")
-            return links[0]
-            
-        return None
-    
-    def _compute_urdf_kinematic_chain(self, current_link: "AssetPrim", 
-                                    positions: Dict[str, List[float]], 
-                                    joints: List["AssetPrim"]):
-        """基于URDF关节origin信息递归计算运动学链"""
-        current_pos = positions[current_link.name]
-        
-        # 找到以当前链接为父链接的所有关节
-        for joint in joints:
-            parent_link = self._get_joint_parent_link(joint)
-            child_link = self._get_joint_child_link(joint)
-            
-            if parent_link == current_link.name and child_link:
-                # 获取关节的origin信息
-                joint_origin = self._get_joint_origin(joint)
-                if joint_origin:
-                    # 计算子链接的位置
-                    child_pos = [
-                        current_pos[0] + joint_origin[0],
-                        current_pos[1] + joint_origin[1],
-                        current_pos[2] + joint_origin[2]
-                    ]
-                    positions[child_link] = child_pos
-                    logger.info(f"Computed position for {child_link}: {child_pos} (from joint {joint.name})")
-                    
-                    # 递归计算子链接的子链接
-                    child_link_obj = next((l for l in self._link_tree.values() if l['prim'].name == child_link), None)
-                    if child_link_obj:
-                        self._compute_urdf_kinematic_chain(child_link_obj['prim'], positions, joints)
-                else:
-                    # 如果没有origin信息，使用默认偏移
-                    child_pos = [
-                        current_pos[0] + 0.0,
-                        current_pos[1] + 0.0,
-                        current_pos[2] + 0.2  # 默认向上偏移20cm
-                    ]
-                    positions[child_link] = child_pos
-                    logger.info(f"Using default offset for {child_link}: {child_pos}")
-                    
-                    child_link_obj = next((l for l in self._link_tree.values() if l['prim'].name == child_link), None)
-                    if child_link_obj:
-                        self._compute_urdf_kinematic_chain(child_link_obj['prim'], positions, joints)
-    
-    def _get_joint_origin(self, joint: "AssetPrim") -> Optional[List[float]]:
-        """从关节中提取origin信息（xyz位移）"""
-        try:
-            # 尝试多种可能的origin属性
-            origin_attrs = [
-                'origin', 'xyz', 'translation', 'offset',
-                'physics:localPos0', 'physics:localPos1'
-            ]
-            
-            for attr_name in origin_attrs:
+            # 尝试多种可能的属性名
+            for attr_name in ['physics:body1', 'child_link', 'childLink', 'body1']:
                 if hasattr(joint, 'get_attribute'):
                     attr = joint.get_attribute(attr_name)
                     if attr and attr.get():
-                        value = attr.get()
-                        if hasattr(value, '__len__') and len(value) >= 3:
-                            return [float(value[0]), float(value[1]), float(value[2])]
-                        elif isinstance(value, str):
-                            # 解析字符串格式，如 "0 0 0.15"
-                            parts = value.strip().split()
-                            if len(parts) >= 3:
-                                try:
-                                    return [float(parts[0]), float(parts[1]), float(parts[2])]
-                                except ValueError:
-                                    pass
+                        return str(attr.get()).split('/')[-1]  # 提取链接名
             
-            # 如果没有找到明确的origin，尝试从子元素中查找
+            # 如果没有找到，尝试从USD层次结构推断
             if hasattr(joint, 'get_children'):
-                for child in joint.get_children():
-                    if hasattr(child, 'name') and 'origin' in child.name.lower():
-                        xyz_attr = child.get_attribute('xyz')
-                        if xyz_attr and xyz_attr.get():
-                            value = xyz_attr.get()
-                            if hasattr(value, '__len__') and len(value) >= 3:
-                                return [float(value[0]), float(value[1]), float(value[2])]
-                                
-        except Exception as e:
-            logger.debug(f"Failed to extract origin from joint {joint.name}: {e}")
-            
+                children = joint.get_children()
+                if children:
+                    return children[0].name
+                    
+        except Exception:
+            pass
         return None
-
+    
     def _calculate_real_link_positions(self, links: List["AssetPrim"], joints: List["AssetPrim"]) -> Dict[str, List[float]]:
-        """基于URDF关节信息计算链接的真实空间位置
+        """基于USD数据计算链接的真实空间位置
         
         Args:
             links: 链接列表
@@ -425,55 +201,23 @@ class RobotVisualizer:
         """
         positions = {}
         
-        # 直接使用URDF关节信息进行运动学计算
-        # 这是最可靠的方法，因为URDF origin信息通常是准确的
+        # 第一步：尝试从USD变换数据获取绝对位置
+        for link in links:
+            real_position = self._extract_real_position(link)
+            if real_position is not None:
+                positions[link.name] = real_position
         
-        # 第一步：找到基座链接（根链接）
-        base_link = self._find_base_link(links, joints)
-        if base_link:
-            positions[base_link.name] = [0.0, 0.0, 0.0]  # 基座在原点
-            
-            # 第二步：从基座开始，使用关节origin信息递归计算所有链接位置
-            self._compute_urdf_kinematic_chain(base_link, positions, joints)
+        # 第二步：如果某些链接没有明确位置，使用运动学链推算
+        missing_links = [link for link in links if link.name not in positions]
+        if missing_links:
+            computed_positions = self._compute_positions_from_kinematic_chain(missing_links, positions)
+            positions.update(computed_positions)
         
-        # 第三步：处理孤立的链接（没有连接到主链的）
-        orphan_links = [link for link in links if link.name not in positions]
-        if orphan_links:
-            logger.warning(f"Found {len(orphan_links)} orphan links: {[l.name for l in orphan_links]}")
-            
-            # 如果所有链接都是孤立的，说明关节解析失败，使用硬编码的URDF布局
-            if len(orphan_links) == len(links) - 1:  # 除了base_link外都是孤立的
-                logger.warning("关节解析失败，使用硬编码的URDF布局")
-                positions = self._create_hardcoded_urdf_layout(links, joints)
-            else:
-                # 只有部分孤立链接，放在基座旁边
-                for i, link in enumerate(orphan_links):
-                    positions[link.name] = [0.3 + i * 0.1, 0.0, 0.0]
-            
-        return positions
-    
-    def _create_hardcoded_urdf_layout(self, links: List["AssetPrim"], joints: List["AssetPrim"]) -> Dict[str, List[float]]:
-        """创建基于测试URDF的硬编码布局"""
-        positions = {}
-        
-        # 根据测试URDF的结构硬编码位置
-        link_map = {link.name: link for link in links}
-        
-        if 'base_link' in link_map:
-            positions['base_link'] = [0.0, 0.0, 0.0]
-            
-        if 'arm1' in link_map:
-            positions['arm1'] = [0.0, 0.0, 0.15]  # base_to_arm1: xyz="0 0 0.15"
-            
-        if 'arm2' in link_map:
-            positions['arm2'] = [0.0, 0.0, 0.35]  # arm1 + arm1_to_arm2: 0.15 + 0.2
-            
-        if 'end_effector' in link_map:
-            positions['end_effector'] = [0.0, 0.0, 0.50]  # arm2 + arm2_to_end: 0.35 + 0.15
-            
-        logger.info("使用硬编码布局:")
-        for name, pos in positions.items():
-            logger.info(f"  {name}: {pos}")
+        # 第三步：如果仍有缺失，使用智能布局算法
+        still_missing = [link for link in links if link.name not in positions]
+        if still_missing:
+            fallback_positions = self._generate_intelligent_layout(still_missing, positions)
+            positions.update(fallback_positions)
             
         return positions
     
@@ -600,44 +344,16 @@ class RobotVisualizer:
             pass
             
         return None
-
-    def _generate_improved_layout(self, missing_links: List["AssetPrim"], 
-                                known_positions: Dict[str, List[float]],
-                                joints: List["AssetPrim"]) -> Dict[str, List[float]]:
-        """为缺失位置的链接生成改进的智能布局"""
+    
+    def _generate_intelligent_layout(self, missing_links: List["AssetPrim"], 
+                                   known_positions: Dict[str, List[float]]) -> Dict[str, List[float]]:
+        """为缺失位置的链接生成智能布局"""
         positions = {}
         
         if not known_positions:
-            # 如果没有任何已知位置，创建基于关节层次的布局
-            base_links = []
-            other_links = []
-            
-            # 分类链接
-            for link in missing_links:
-                name_lower = link.name.lower()
-                if any(keyword in name_lower for keyword in ['base', 'root', 'world']):
-                    base_links.append(link)
-                else:
-                    other_links.append(link)
-            
-            # 基座放在原点
-            for i, base_link in enumerate(base_links):
-                positions[base_link.name] = [i * 0.3, 0, 0]
-            
-            # 其他链接按照URDF层次布局
-            if base_links:
-                base_pos = positions[base_links[0].name]
-                for i, link in enumerate(other_links):
-                    # 根据URDF中的关节顺序垂直排列
-                    positions[link.name] = [
-                        base_pos[0],
-                        base_pos[1],
-                        base_pos[2] + 0.2 * (i + 1)
-                    ]
-            else:
-                # 没有基座，水平排列
-                for i, link in enumerate(other_links):
-                    positions[link.name] = [i * 0.2, 0, 0.1]
+            # 如果没有任何已知位置，创建默认布局
+            for i, link in enumerate(missing_links):
+                positions[link.name] = [i * 0.2, 0, 0]
         else:
             # 基于已知位置分布缺失的链接
             existing_positions = list(known_positions.values())
@@ -672,17 +388,14 @@ class RobotVisualizer:
             geometry_info = self._extract_geometry_info(link)
             
             if geometry_info:
-                logger.info(f"📐 找到真实几何信息: {link_name} -> {geometry_info}")
                 self._render_geometry(ax, position, geometry_info, color, link_name)
             else:
-                logger.info(f"📦 使用智能默认几何: {link_name}")
-                # 使用智能默认几何形状（基于链接名称）
-                self._render_smart_default_geometry(ax, position, color, link_name)
+                # 使用默认几何形状
+                self._render_default_geometry(ax, position, color, link_name)
     
     def _extract_geometry_info(self, link: "AssetPrim") -> Optional[Dict]:
         """从USD数据中提取几何信息"""
         try:
-            found_real_geometry = False
             geometry_info = {
                 'type': 'box',  # 默认类型
                 'size': [0.1, 0.1, 0.1],  # 默认尺寸
@@ -702,7 +415,6 @@ class RobotVisualizer:
                             if size_attr and size_attr.get():
                                 size = size_attr.get()
                                 geometry_info['size'] = [float(size), float(size), float(size)]
-                                found_real_geometry = True
                                 
                         elif type_name == 'Cylinder':
                             geometry_info['type'] = 'cylinder'
@@ -710,26 +422,17 @@ class RobotVisualizer:
                             height_attr = child.get_attribute('height')
                             if radius_attr and radius_attr.get():
                                 geometry_info['radius'] = float(radius_attr.get())
-                                found_real_geometry = True
                             if height_attr and height_attr.get():
                                 geometry_info['height'] = float(height_attr.get())
-                                found_real_geometry = True
                                 
                         elif type_name == 'Sphere':
                             geometry_info['type'] = 'sphere'
                             radius_attr = child.get_attribute('radius')
                             if radius_attr and radius_attr.get():
                                 geometry_info['radius'] = float(radius_attr.get())
-                                found_real_geometry = True
-            
-            # 只有找到真实几何信息时才返回，否则返回None让智能默认几何接管
-            if found_real_geometry:
-                logger.debug(f"Found real geometry for {link.name}: {geometry_info}")
-                return geometry_info
-            else:
-                logger.debug(f"No real geometry found for {link.name}, using smart defaults")
-                return None
                                 
+            return geometry_info
+            
         except Exception as e:
             logger.debug(f"Failed to extract geometry for {link.name}: {e}")
             return None
@@ -761,56 +464,6 @@ class RobotVisualizer:
         """渲染默认几何形状"""
         # 使用适中的默认尺寸
         self.plotter.plot_box(ax, position, [0.08, 0.08, 0.08], color, label)
-    
-    def _render_smart_default_geometry(self, ax, position: List[float], color: str, label: str):
-        """基于链接名称智能选择几何形状"""
-        link_name_lower = label.lower()
-        
-        logger.info(f"🔧 使用智能几何形状渲染: {label}")
-        
-        if 'base' in link_name_lower:
-            # 基座：较大的立方体
-            logger.info(f"  -> 基座形状: [0.15, 0.15, 0.05]")
-            self.plotter.plot_box(ax, position, [0.15, 0.15, 0.05], color, label)
-            
-        elif 'arm' in link_name_lower or 'link' in link_name_lower:
-            # 手臂：长方形，模拟臂段
-            if 'arm1' in link_name_lower:
-                # 第一臂段：较粗，垂直方向
-                logger.info(f"  -> 第一臂段形状: [0.06, 0.06, 0.12]")
-                self.plotter.plot_box(ax, position, [0.06, 0.06, 0.12], color, label)
-            elif 'arm2' in link_name_lower:
-                # 第二臂段：稍细，垂直方向
-                logger.info(f"  -> 第二臂段形状: [0.05, 0.05, 0.10]")
-                self.plotter.plot_box(ax, position, [0.05, 0.05, 0.10], color, label)
-            else:
-                # 其他臂段
-                logger.info(f"  -> 其他臂段形状: [0.05, 0.05, 0.08]")
-                self.plotter.plot_box(ax, position, [0.05, 0.05, 0.08], color, label)
-                
-        elif 'end' in link_name_lower or 'effector' in link_name_lower or 'gripper' in link_name_lower:
-            # 末端执行器：较小的立方体
-            logger.info(f"  -> 末端执行器形状: [0.04, 0.04, 0.06]")
-            self.plotter.plot_box(ax, position, [0.04, 0.04, 0.06], color, label)
-            
-        elif 'wheel' in link_name_lower:
-            # 轮子：圆柱体（如果支持的话）
-            if hasattr(self.plotter, 'plot_cylinder'):
-                logger.info(f"  -> 轮子形状: 圆柱体 radius=0.05, height=0.02")
-                self.plotter.plot_cylinder(ax, position, 0.05, 0.02, color, label)
-            else:
-                logger.info(f"  -> 轮子形状（立方体替代）: [0.1, 0.02, 0.1]")
-                self.plotter.plot_box(ax, position, [0.1, 0.02, 0.1], color, label)
-                
-        elif 'leg' in link_name_lower or 'foot' in link_name_lower:
-            # 腿部：细长的立方体
-            logger.info(f"  -> 腿部形状: [0.03, 0.03, 0.15]")
-            self.plotter.plot_box(ax, position, [0.03, 0.03, 0.15], color, label)
-            
-        else:
-            # 默认：中等尺寸的立方体
-            logger.info(f"  -> 默认形状: [0.08, 0.08, 0.08]")
-            self.plotter.plot_box(ax, position, [0.08, 0.08, 0.08], color, label)
     
     def _render_real_joint_connections(self, ax, link_positions: Dict[str, List[float]], 
                                      joints: List["AssetPrim"]):

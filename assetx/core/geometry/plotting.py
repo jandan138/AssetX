@@ -48,7 +48,7 @@ class MatplotlibPlotter:
             return None, None
             
     def plot_box(self, ax, center: List[float], size: List[float], color: str = 'blue', label: str = ""):
-        """绘制立方体"""
+        """绘制立方体（实体面 + 边框）"""
         try:
             import numpy as np
             x, y, z = center
@@ -62,14 +62,34 @@ class MatplotlibPlotter:
                 [x+dx/2, y+dy/2, z+dz/2], [x-dx/2, y+dy/2, z+dz/2],
             ])
             
-            # 立方体的12条边
+            # 立方体的6个面（每面4个顶点）
+            faces = [
+                [0, 1, 2, 3],  # 底面 (z-dz/2)
+                [4, 7, 6, 5],  # 顶面 (z+dz/2)
+                [0, 4, 5, 1],  # 前面 (y-dy/2)
+                [2, 6, 7, 3],  # 后面 (y+dy/2)
+                [0, 3, 7, 4],  # 左面 (x-dx/2)
+                [1, 5, 6, 2],  # 右面 (x+dx/2)
+            ]
+            
+            # 绘制实体面
+            from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+            face_vertices = []
+            for face in faces:
+                face_vertices.append([vertices[i] for i in face])
+            
+            # 添加带透明度的实体面
+            poly3d = Poly3DCollection(face_vertices, alpha=0.3, facecolor=color, edgecolor='none')
+            ax.add_collection3d(poly3d)
+            
+            # 绘制边框线条（更清晰的轮廓）
             edges = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],
                     [0,4],[1,5],[2,6],[3,7]]
             
             for i, edge in enumerate(edges):
                 points = vertices[edge]
                 label_text = label if i == 0 else ""  # 只在第一条边显示标签
-                ax.plot3D(*points.T, color=color, linewidth=3, label=label_text)
+                ax.plot3D(*points.T, color=color, linewidth=2, alpha=0.8, label=label_text)
                 
         except Exception as e:
             logger.error(f"绘制立方体失败: {e}")
