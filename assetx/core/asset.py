@@ -16,6 +16,9 @@ from .primitives import AssetPrim, SdfPath, AssetStage
 # 功能模块
 from .modules import AssetQuery, AssetSchema, AssetMeta
 
+# 几何处理模块
+from .geometry import GeometryProcessor
+
 # 加载器
 from .loaders import (
     BaseAssetLoader,
@@ -49,6 +52,14 @@ class Asset:
         self.query = AssetQuery(self)
         self.schema = AssetSchema(self)
         self.meta = AssetMeta(self)
+        
+        # 几何处理模块
+        self.geometry = GeometryProcessor(self)
+
+    @property
+    def stage(self) -> Optional[AssetStage]:
+        """获取Asset的Stage对象"""
+        return self._stage
 
     @property
     def is_loaded(self) -> bool:

@@ -73,6 +73,19 @@ class AssetQuery:
         """
         return self.traverse(lambda p: p.name == name)
     
+    def get_children_by_type(self, parent_prim: "AssetPrim", type_name: str) -> List["AssetPrim"]:
+        """获取指定Prim的特定类型子节点
+
+        Args:
+            parent_prim: 父Prim
+            type_name: 子节点类型名称
+
+        Returns:
+            匹配的子Prim列表
+        """
+        children = parent_prim.get_children()
+        return [child for child in children if child.type_name == type_name]
+    
     def find_prims_by_path_pattern(self, pattern: str) -> List["AssetPrim"]:
         """根据路径模式查找Prim
 

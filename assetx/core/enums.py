@@ -8,6 +8,17 @@ AssetX USD风格架构 - 枚举类型定义
 from enum import Enum
 
 
+class GeometryType(Enum):
+    """几何体类型枚举"""
+    BOX = "box"
+    SPHERE = "sphere"
+    CYLINDER = "cylinder"
+    MESH = "mesh"
+    PLANE = "plane"
+    CAPSULE = "capsule"
+    CONE = "cone"
+
+
 class AssetFormat(Enum):
     """支持的资产格式"""
 
