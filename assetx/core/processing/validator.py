@@ -7,7 +7,7 @@ import math
 from typing import Any, Dict, List, Optional, Tuple
 
 # 现在使用USD风格的Asset类，不再需要单独的PhysicsProperties
-from .asset import Asset
+from ..asset import Asset
 
 logger = logging.getLogger(__name__)
 

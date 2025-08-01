@@ -12,8 +12,8 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from assetx.core.asset import Asset
-from assetx.core.converter import FormatConverter
-from assetx.core.validator import PhysicsValidator
+from assetx.core.processing.converter import FormatConverter
+from assetx.core.processing.validator import PhysicsValidator
 from assetx.mesh.processor import MeshProcessor
 from assetx.meta.manager import MetaManager
 
@@ -79,7 +79,7 @@ class TestPhysicsValidator(unittest.TestCase):
     
     def test_validation_result(self):
         """Test ValidationResult class"""
-        from assetx.core.validator import ValidationResult
+        from assetx.core.processing.validator import ValidationResult
         
         result = ValidationResult()
         self.assertTrue(result.is_valid)

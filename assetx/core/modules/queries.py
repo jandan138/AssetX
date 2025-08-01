@@ -8,8 +8,8 @@ AssetX 查询和遍历功能
 from typing import TYPE_CHECKING, Callable, List, Optional
 
 if TYPE_CHECKING:
-    from .asset import Asset
-    from .prim import AssetPrim
+    from ..asset import Asset
+    from ..primitives import AssetPrim
 
 
 class AssetQuery:

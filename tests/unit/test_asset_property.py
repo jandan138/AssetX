@@ -10,11 +10,11 @@ import os
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from assetx.core.property import (
+from assetx.core.primitives.property import (
     AssetAttribute, AssetRelationship
 )
-from assetx.core.sdf_path import SdfPath
-from assetx.core.stage import AssetStage
+from assetx.core.primitives.sdf_path import SdfPath
+from assetx.core.primitives.stage import AssetStage
 from assetx.core.enums import VariabilityType
 
 

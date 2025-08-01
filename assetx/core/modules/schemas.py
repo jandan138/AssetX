@@ -8,9 +8,8 @@ AssetX 机器人Schema应用功能
 from typing import TYPE_CHECKING, List, Optional, Union
 
 if TYPE_CHECKING:
-    from .asset import Asset
-    from .prim import AssetPrim
-    from .sdf_path import SdfPath
+    from ..asset import Asset
+    from ..primitives import AssetPrim, SdfPath
 
 
 class AssetSchema:
@@ -89,7 +88,7 @@ class AssetSchema:
         Returns:
             创建的AssetPrim对象
         """
-        from .sdf_path import SdfPath
+        from ..primitives import SdfPath
         
         prim = self.asset.define_prim(path, "Joint")
         prim.apply_api_schema("JointAPI")

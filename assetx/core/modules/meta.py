@@ -8,7 +8,7 @@ AssetX 元数据操作功能
 from typing import TYPE_CHECKING, Any, Dict
 
 if TYPE_CHECKING:
-    from .asset import Asset
+    from ..asset import Asset
 
 
 class AssetMeta:

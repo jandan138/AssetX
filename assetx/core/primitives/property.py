@@ -8,7 +8,7 @@ AssetX USD风格架构 - 属性系统
 import weakref
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from .enums import PropertyType, VariabilityType
+from ..enums import PropertyType, VariabilityType
 from .sdf_path import SdfPath
 
 if TYPE_CHECKING:

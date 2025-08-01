@@ -10,9 +10,9 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 import math
 
-from .asset import Asset
-from .stage import AssetStage
-from .prim import AssetPrim
+from ..asset import Asset
+from ..primitives.stage import AssetStage
+from ..primitives.prim import AssetPrim
 
 
 class UsdToUrdfConverter:

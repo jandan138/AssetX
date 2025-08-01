@@ -11,14 +11,10 @@ from typing import Any, Dict, List, Optional, Union
 
 from ..meta.manager import MetaManager
 from .enums import AssetFormat
-from .prim import AssetPrim
-from .sdf_path import SdfPath
-from .stage import AssetStage
+from .primitives import AssetPrim, SdfPath, AssetStage
 
 # 功能模块
-from .queries import AssetQuery
-from .schemas import AssetSchema
-from .meta import AssetMeta
+from .modules import AssetQuery, AssetSchema, AssetMeta
 
 # 加载器
 from .loaders import (

@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..asset import Asset
-    from ..stage import AssetStage
+    from ..primitives import AssetStage
 
 
 class BaseAssetLoader(ABC):

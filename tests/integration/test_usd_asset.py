@@ -10,7 +10,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from assetx.core.asset import Asset
-from assetx.core.sdf_path import SdfPath
+from assetx.core.primitives.sdf_path import SdfPath
 from assetx.core.enums import AssetFormat
 import tempfile
 
