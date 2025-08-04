@@ -120,7 +120,57 @@ class AssetQuery:
         Returns:
             链接Prim列表
         """
-        return self.find_prims_by_type("Link")
+        # 首先尝试查找标准的Link类型
+        links = self.find_prims_by_type("Link")
+        
+        # 如果没有找到标准Link，尝试智能识别USD中的链接
+        if not links:
+            # 在USD文件中，链接通常是:
+            # 1. 类型为"Prim"或"Xform"
+            # 2. 名称包含"link"
+            # 3. 不是visuals/collisions子组件
+            # 4. 通常在机器人根目录下的第二层
+            
+            potential_links = []
+            
+            # 方法1：查找名称包含link的Prim
+            all_prims = self.get_all_prims()
+            for prim in all_prims:
+                path_str = str(prim.path)
+                name_lower = prim.name.lower()
+                
+                # 检查是否是链接候选
+                is_link_candidate = (
+                    'link' in name_lower and  # 名称包含link
+                    'visuals' not in path_str and  # 不是visuals子组件
+                    'collisions' not in path_str and  # 不是collisions子组件
+                    prim.type_name in ['Prim', 'Xform']  # 类型是Prim或Xform
+                )
+                
+                if is_link_candidate:
+                    potential_links.append(prim)
+            
+            # 方法2：如果还是没找到，查找所有非子组件的Prim
+            if not potential_links:
+                for prim in all_prims:
+                    path_str = str(prim.path)
+                    path_parts = path_str.strip('/').split('/')
+                    
+                    # 机器人链接通常在第二层（/robot_name/link_name）
+                    is_potential_link = (
+                        len(path_parts) == 2 and  # 第二层
+                        prim.type_name in ['Prim', 'Xform'] and  # 合适的类型
+                        'visuals' not in path_str and
+                        'collisions' not in path_str and
+                        not prim.name.lower().startswith('joint')  # 不是关节
+                    )
+                    
+                    if is_potential_link:
+                        potential_links.append(prim)
+            
+            links = potential_links
+        
+        return links
     
     def get_joints(self) -> List["AssetPrim"]:
         """获取所有关节Prim
